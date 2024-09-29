@@ -1,0 +1,245 @@
+data myclass;
+	set sashelp.class;
+run;
+
+proc print data=myclass;
+run;
+
+-
+
+proc contents
+	DATA="/home/u63608835/EPG1V2/data/storm_summary.sas7bdat";
+RUN;
+
+-
+
+libname pg1 base "/home/u63608835/EPG1V2/data";
+
+-
+
+libname out "s:/workshop/output";
+
+data class_copy1 out.class_copy2;
+	set sashelp.class;
+run;
+
+-
+
+*Complete the OPTIONS statement;
+options validvarname=v7;
+
+*Complete the LIBNAME statement;
+libname xlstorm xlsx "/home/u63608835/EPG1V2/data/storm.xlsx";
+
+*Complete the DATA= option to reference the STORM_SUMMARY worksheet;
+proc contents data= xlstorm.storm_summary;
+run;
+
+*Clear the XLSTORM library;
+libname xlstorm clear;
+
+-
+
+/home/u63608835/EPG1V2/data/np_info.xlsx
+
+options validvarname=v7;
+
+proc contents data=np.parks;
+
+run;
+
+libname np clear;
+
+-
+
+proc import datafile="/home/u63608835/EPG1V2/data/storm_damage.csv" dbms=csv
+			out=storm_damage_import replace;
+run;
+
+*Complete the PROC CONTENTS step;
+proc contents data=storm_damage_import ;
+run;
+
+-
+
+proc import datafile="/home/u63608835/EPG1V2/data/storm_damage.tab"
+		dbms=tab out=storm_damage_tab replace;
+run;
+
+-
+
+proc import datafile="/home/u63608835/EPG1V2/data/eu_sport_trade.xlsx" dbms=xlsx out=eu_sport_trade replace;
+run;
+
+proc contents data=eu_sport_trade;
+run;
+
+-
+
+proc import datafile="/home/u63608835/EPG1V2/data/np_traffic.csv" dbms=csv out=traffic replace;
+			guessingrows= max;
+run;
+
+proc contents data=traffic;
+run;
+
+-
+
+/* list first 10 row */
+proc print data=PG1.STORM_SUMMARY (obs=10);
+	var Season Name Basin MaxWindMPH MinPressure StartDate EndDate;
+run;
+
+/* calculate summary statistics*/
+proc means data=PG1.STORM_SUMMARY;
+	var MaxWindMPH MinPressure;
+run;
+
+/*examine extreme values*/
+proc univariate data=PG1.STORM_SUMMARY;
+	var MaxWindMPH MinPressure;
+run;
+
+/* list unique values and frequencies */
+proc freq data=PG1.STORM_SUMMARY;
+	tables Basin Type Season;
+run;
+
+-
+
+proc print data=pg1.np_summary (obs=20);
+	var  Reg Type ParkName DayVisits TentCampers RVCampers;
+run;
+
+-
+
+proc freq data=pg1.np_summary;
+	tables Reg Type;
+run;
+
+proc univariate data=pg1.np_summary;
+	var Acres;
+run;
+
+-
+
+libname pg1 base "/home/u63608835/EPG1V2/data";
+
+
+proc print data=pg1.storm_summary;
+	*Add WHERE statement;
+	where MaxWindMPH >= 156;
+run;
+
+proc print data=pg1.storm_summary;
+	*Add WHERE statement;
+	where Basin=”WP”;
+run;
+
+proc print data=pg1.storm_summary;
+	*Add WHERE statement;
+	where Basin in (“SH” “NI”);
+run;
+
+proc print data=pg1.storm_summary;
+	*Add WHERE statement;
+	where StartDate >= “01jan2010”d;
+run;
+
+proc print data=pg1.storm_summary;
+	*Add WHERE statement;
+	where Type=”TS” and Hem_EW=”W”;
+run;
+
+proc print data=pg1.storm_summary;
+	*Add WHERE statement;
+where MaxWindMPH > 156 or 0 < MinPressure < 920;
+run;
+
+-
+
+proc print data=pg1.storm_summary(obs=50);
+/* 	*where MinPressure is missing; /*same as MinPressure = . */
+ 	where MinPressure is missing;
+/* 	*where Type is not missing; /*same as Type ne " " */
+	where type is not missing;
+/* 	*where MaxWindMPH between 150 and 155; */
+	where MaxWindMPH BETWEEN 150 AND 155;
+/* 	*where Basin like "_I"; */
+	where Basin like "_I";
+/* 	*WHERE storm names begin with the letter Z*/
+	where name like "Z%";
+run;
+
+-
+
+%let WindSpeed = 156;
+%let BasinCode = NA;
+%let Date = 01JAN2000;
+
+proc print data=pg1.storm_summary;
+	where MaxWindMPH>=&WindSpeed and Basin="&BasinCode" and StartDate>="&Date"d;
+	var Basin Name StartDate EndDate MaxWindMPH;
+run;
+
+proc means data=pg1.storm_summary;
+	where MaxWindMPH>=&WindSpeed and Basin="&BasinCode" and StartDate>="&Date"d;
+	var MaxWindMPH MinPressure;
+run; 
+-
+
+%let WindSpeed = 100;
+%let BasinCode = SP;
+%let Date = 01JAN2010;
+
+proc print data=pg1.storm_summary;
+	where MaxWindMPH>=&WindSpeed and Basin="&BasinCode" and StartDate>="&Date"d;
+	var Basin Name StartDate EndDate MaxWindMPH;
+run;
+
+proc means data=pg1.storm_summary;
+	where MaxWindMPH>=&WindSpeed and Basin="&BasinCode" and StartDate>="&Date"d;
+	var MaxWindMPH MinPressure;
+run; 
+
+-
+
+%let BasinCode=SP;
+
+proc means data=pg1.storm_summary;
+	where Basin="&BasinCode";
+	var MaxWindMPH MinPressure;
+run;
+
+proc freq data=pg1.storm_summary;
+	where Basin='&BasinCode';
+	tables Type;
+run;
+
+-
+
+proc print data=pg1.np_summary;
+	var Type ParkName;
+	*Add a WHERE statement;
+	where ParkName contains ("Preserve");
+run;
+
+-
+
+proc print data=pg1.np_summary;
+	var Type ParkName;
+	*Add a WHERE statement;
+	where ParkName contains ("Preserve");
+run;
+
+-
+
+/* sort the table to identify and remove duplicates */
+
+proc sort data=pg1.np_largeparks out=park_clean noduprecs dupout=park_dups;
+	by _all_;
+run;
+
+-
+
+
