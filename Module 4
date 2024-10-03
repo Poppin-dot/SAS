@@ -1,0 +1,217 @@
+Module 4
+
+proc print data=pg1.np_summary (obs=20);
+	var  Reg Type ParkName DayVisits TentCampers RVCampers;
+run;
+
+—---------------------------------------------------
+
+proc freq data=pg1.np_summary;
+	tables Reg Type;
+run;
+
+proc univariate data=pg1.np_summary;
+	var Acres;
+run;
+
+—---------------------------------------------------
+
+libname pg1 base "/home/u63608835/EPG1V2/data";
+
+
+proc print data=pg1.storm_summary;
+	*Add WHERE statement;
+	where MaxWindMPH >= 156;
+run;
+
+proc print data=pg1.storm_summary;
+	*Add WHERE statement;
+	where Basin=”WP”;
+run;
+
+proc print data=pg1.storm_summary;
+	*Add WHERE statement;
+	where Basin in (“SH” “NI”);
+run;
+
+proc print data=pg1.storm_summary;
+	*Add WHERE statement;
+	where StartDate >= “01jan2010”d;
+run;
+
+proc print data=pg1.storm_summary;
+	*Add WHERE statement;
+	where Type=”TS” and Hem_EW=”W”;
+run;
+
+proc print data=pg1.storm_summary;
+	*Add WHERE statement;
+where MaxWindMPH > 156 or 0 < MinPressure < 920;
+run;
+
+—---------------------------------------------------
+
+proc print data=pg1.storm_summary(obs=50);
+/* 	*where MinPressure is missing; /*same as MinPressure = . */
+ 	where MinPressure is missing;
+/* 	*where Type is not missing; /*same as Type ne " " */
+	where type is not missing;
+/* 	*where MaxWindMPH between 150 and 155; */
+	where MaxWindMPH BETWEEN 150 AND 155;
+/* 	*where Basin like "_I"; */
+	where Basin like "_I";
+/* 	*WHERE storm names begin with the letter Z*/
+	where name like "Z%";
+run;
+
+—---------------------------------------------------
+
+%let WindSpeed = 156;
+%let BasinCode = NA;
+%let Date = 01JAN2000;
+
+proc print data=pg1.storm_summary;
+	where MaxWindMPH>=&WindSpeed and Basin="&BasinCode" and StartDate>="&Date"d;
+	var Basin Name StartDate EndDate MaxWindMPH;
+run;
+
+proc means data=pg1.storm_summary;
+	where MaxWindMPH>=&WindSpeed and Basin="&BasinCode" and StartDate>="&Date"d;
+	var MaxWindMPH MinPressure;
+run; 
+—---------------------------------------------------
+
+%let WindSpeed = 100;
+%let BasinCode = SP;
+%let Date = 01JAN2010;
+
+proc print data=pg1.storm_summary;
+	where MaxWindMPH>=&WindSpeed and Basin="&BasinCode" and StartDate>="&Date"d;
+	var Basin Name StartDate EndDate MaxWindMPH;
+run;
+
+proc means data=pg1.storm_summary;
+	where MaxWindMPH>=&WindSpeed and Basin="&BasinCode" and StartDate>="&Date"d;
+	var MaxWindMPH MinPressure;
+run; 
+
+—---------------------------------------------------
+
+%let BasinCode=SP;
+
+proc means data=pg1.storm_summary;
+	where Basin="&BasinCode";
+	var MaxWindMPH MinPressure;
+run;
+
+proc freq data=pg1.storm_summary;
+	where Basin='&BasinCode';
+	tables Type;
+run;
+
+—---------------------------------------------------
+
+proc print data=pg1.np_summary;
+	var Type ParkName;
+	*Add a WHERE statement;
+	where ParkName contains ("Preserve");
+run;
+
+—---------------------------------------------------
+
+proc print data=pg1.np_summary;
+	var Type ParkName;
+	*Add a WHERE statement;
+	where ParkName contains ("Preserve");
+run;
+
+—---------------------------------------------------
+
+/* sort the table to identify and remove duplicates */
+
+proc sort data=pg1.np_largeparks out=park_clean noduprecs dupout=park_dups;
+	by _all_;
+run;
+
+—---------------------------------------------------
+
+libname pg1 base "/home/u63608835/EPG1V2/data";
+
+*Write a PROC PRINT step and FORMAT statement;
+
+proc print data=pg1.storm_damage;
+	format Date mmddyy10. Cost dollar16.;
+run;
+
+—---------------------------------------------------
+
+/* date11. will display 17-JUL-1980 */
+/* date9. will display 17JUL1980 */
+/* date7. will display 17JUL80 */
+
+proc print data=pg1.storm_summary(obs=20);
+	format Lat Lon 4. StartDate EndDate date7.;
+run;
+
+/* MONNAME is month name */
+
+proc freq data=pg1.storm_summary order=freq;
+	tables StartDate;
+	*Add a FORMAT statement;
+	format StartDate MONNAME.; 
+run;
+
+—---------------------------------------------------
+
+/* WHERE and BY statements to answer    *; */
+/* *       the following question: Which storm in the North  *; */
+/* *       Atlantic basin (NA or na) had the strongest       *; */
+/* *       MaxWindMPH? */
+
+proc sort data=pg1.storm_summary out=storm_sort;
+	where basin in ("NA" or "na");
+	by Descending MaxWindMPH;
+run;
+
+—---------------------------------------------------
+
+/* the first PROC SORT step to sort by all    *;
+*       columns and remove any duplicate rows. */
+*Step 1;
+proc sort data=pg1.storm_detail out=storm_clean 
+		nodupkey dupout=storm_dups;
+	by _all_;
+run;
+
+/* the second PROC SORT step and confirm that    *;
+*       the first row for each storm represents           *;
+*       the minimum value of Pressure.  */
+*Step 2;
+proc sort data=pg1.storm_detail out=min_pressure;
+	where Pressure is not missing and Name is not missing;
+	by descending Season Basin Name Pressure;
+run;
+
+/* the third PROC SORT step to sort the       *;
+*       MIN_PRESSURE table and keep the first row for     *;
+*       each storm. */
+*Step 3;
+proc sort data=min_pressure nodupkey;
+	by descending Season Basin Name;
+run;
+
+—---------------------------------------------------
+
+libname pg1 base "/home/u63608835/EPG1V2/data";
+
+proc sort data=pg1.np_summary out=np_sort;
+	by Reg descending DayVisits;
+	where Type in ("NP");
+
+run;
+
+—---------------------------------------------------
+
+proc sort data=pg1.np_largeparks out=park_clean
+			nodupkey dupout=park_dups;
+		by _all_;
